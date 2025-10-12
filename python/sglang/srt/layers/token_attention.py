@@ -193,10 +193,18 @@ def _token_att_m_fwd(
             k_buffer.stride(0),
             k_buffer.stride(1),
             att_out.stride(0),
+            kv_group_num=kv_group_num,
+            BLOCK_DMODEL=Lk,
+            BLOCK_N=BLOCK,
+            num_stages=1,
         )
         return
 
-    _fwd_kernel_stage1[grid](
+    # Launch kernel using modern Triton API
+    kernel_launcher = wrap_kernel_launcher(_fwd_kernel_stage1)
+    kernel_launcher(
+        grid,
+        num_warps,
         q,
         k_buffer,
         sm_scale,
@@ -214,10 +222,9 @@ def _token_att_m_fwd(
         kv_group_num=kv_group_num,
         BLOCK_DMODEL=Lk,
         BLOCK_N=BLOCK,
-        num_warps=num_warps,
         num_stages=1,
     )
-    cached_kernel_stage1 = wrap_kernel_launcher(_fwd_kernel_stage1)
+    cached_kernel_stage1 = kernel_launcher
 
 
 def _token_softmax_reducev_fwd(
@@ -256,10 +263,18 @@ def _token_softmax_reducev_fwd(
             o.stride(1),
             req_to_tokens.stride(0),
             other_kv_index,
+            kv_group_num=kv_group_num,
+            BLOCK_DMODEL=v_buffer.shape[-1],
+            BLOCK_N=BLOCK,
+            num_stages=3,
         )
         return
 
-    _fwd_kernel_stage2[grid](
+    # Launch kernel using modern Triton API
+    kernel_launcher = wrap_kernel_launcher(_fwd_kernel_stage2)
+    kernel_launcher(
+        grid,
+        num_warps,
         logics,
         v_buffer,
         o,
@@ -277,10 +292,9 @@ def _token_softmax_reducev_fwd(
         kv_group_num=kv_group_num,
         BLOCK_DMODEL=v_buffer.shape[-1],
         BLOCK_N=BLOCK,
-        num_warps=num_warps,
         num_stages=3,
     )
-    cached_kernel_stage2 = wrap_kernel_launcher(_fwd_kernel_stage2)
+    cached_kernel_stage2 = kernel_launcher
 
 
 def token_attention_fwd(

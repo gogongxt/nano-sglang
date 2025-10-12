@@ -48,10 +48,16 @@ def get_selected_logprob(all_logits, len_add_1, input_ids, logprobs):
             input_ids,
             logprobs,
             max_seq_len,
+            voc_size,
+            BLOCK_SIZE=128,
         )
         return
 
-    _fwd_segmented_gather[grid](
+    # Launch kernel using modern Triton API
+    kernel_launcher = wrap_kernel_launcher(_fwd_segmented_gather)
+    kernel_launcher(
+        grid,
+        4,
         all_logits,
         len_add_1,
         cum_len,
@@ -61,7 +67,7 @@ def get_selected_logprob(all_logits, len_add_1, input_ids, logprobs):
         voc_size,
         BLOCK_SIZE=128,
     )
-    cached_kernel = wrap_kernel_launcher(_fwd_segmented_gather)
+    cached_kernel = kernel_launcher
 
 
 if __name__ == "__main__":

@@ -152,10 +152,19 @@ def context_attention_fwd(q, k, v, o, b_start_loc, b_seq_len, max_input_len):
             v.stride(1),
             o.stride(0),
             o.stride(1),
+            kv_group_num=kv_group_num,
+            BLOCK_M=BLOCK,
+            BLOCK_DMODEL=Lk,
+            BLOCK_N=BLOCK,
+            num_stages=1,
         )
         return
 
-    _fwd_kernel[grid](
+    # Launch kernel using modern Triton API
+    kernel_launcher = wrap_kernel_launcher(_fwd_kernel)
+    kernel_launcher(
+        grid,
+        num_warps,
         q,
         k,
         v,
@@ -175,7 +184,6 @@ def context_attention_fwd(q, k, v, o, b_start_loc, b_seq_len, max_input_len):
         BLOCK_M=BLOCK,
         BLOCK_DMODEL=Lk,
         BLOCK_N=BLOCK,
-        num_warps=num_warps,
         num_stages=1,
     )
-    cached_kernel = wrap_kernel_launcher(_fwd_kernel)
+    cached_kernel = kernel_launcher

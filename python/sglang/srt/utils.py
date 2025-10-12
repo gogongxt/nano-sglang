@@ -120,7 +120,7 @@ def get_int_token_logit_bias(tokenizer, vocab_size):
 
 
 def wrap_kernel_launcher(kernel):
-    """A faster launcher for triton kernels."""
+    """A faster launcher for triton kernels compatible with modern Triton versions."""
     import torch.distributed as dist
 
     if dist.is_initialized():
@@ -128,63 +128,57 @@ def wrap_kernel_launcher(kernel):
     else:
         rank = 0
 
-    kernels = kernel.cache[rank].values()
-    kernel = next(iter(kernels))
-
-    # Different trition versions use different low-level names
-    if hasattr(kernel, "cu_function"):
-        kfunction = kernel.cu_function
-    else:
-        kfunction = kernel.function
-
-    if hasattr(kernel, "c_wrapper"):
-        run = kernel.c_wrapper
-    else:
-        run = kernel.run
-
-    add_cluster_dim = True
-
-    def ret_func(grid, num_warps, *args):
-        nonlocal add_cluster_dim
-
-        try:
-            if add_cluster_dim:
-                run(
-                    grid[0],
-                    grid[1],
-                    grid[2],
-                    num_warps,
-                    1,
-                    1,
-                    1,
-                    1,
-                    kernel.shared,
-                    0,
-                    kfunction,
-                    None,
-                    None,
-                    kernel,
-                    *args,
-                )
+    # Handle different kernel cache structures across Triton versions
+    try:
+        # Try to get the actual kernel instance
+        if hasattr(kernel, "cache") and rank in kernel.cache:
+            kernels = list(kernel.cache[rank].values())
+            if kernels:
+                kernel_instance = kernels[0]
             else:
-                run(
-                    grid[0],
-                    grid[1],
-                    grid[2],
-                    num_warps,
-                    kernel.shared,
-                    0,
-                    kfunction,
-                    None,
-                    None,
-                    kernel,
-                    *args,
-                )
-        except TypeError:
-            add_cluster_dim = not add_cluster_dim
-            ret_func(grid, num_warps, *args)
+                kernel_instance = kernel
+        else:
+            kernel_instance = kernel
+    except (AttributeError, KeyError):
+        kernel_instance = kernel
 
-    return ret_func
+    # Modern Triton 3.4.0 compatible wrapper
+    def modern_launcher(grid, num_warps, *args, **kwargs):
+        # For Triton 3.4.0, we need to use the [grid] indexing syntax
+        try:
+            # Extract kwargs that are meant for kernel launch parameters
+            launch_kwargs = {}
+            kernel_kwargs = {}
+
+            # Separate launch parameters from kernel parameters
+            for key, value in kwargs.items():
+                if key in ["num_warps", "num_stages"]:
+                    launch_kwargs[key] = value
+                else:
+                    kernel_kwargs[key] = value
+
+            # Add num_warps if not in kwargs
+            if "num_warps" not in launch_kwargs:
+                launch_kwargs["num_warps"] = num_warps
+
+            # Call the kernel with modern syntax
+            return kernel_instance[grid](*args, **launch_kwargs, **kernel_kwargs)
+        except Exception as e:
+            # Fallback for different calling conventions
+            try:
+                # Try without kwargs
+                return kernel_instance[grid](*args, num_warps=num_warps)
+            except Exception:
+                try:
+                    # Try direct call (for cached kernels)
+                    if callable(kernel_instance):
+                        return kernel_instance(grid, num_warps, *args)
+                    else:
+                        raise RuntimeError(f"Cannot launch kernel: {kernel_instance}")
+                except Exception:
+                    raise RuntimeError(f"Failed to launch kernel: {e}")
+
+    return modern_launcher
 
 
 def is_multimodal_model(model):
