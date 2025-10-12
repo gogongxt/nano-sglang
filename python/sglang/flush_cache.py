@@ -1,15 +1,15 @@
 """Flush cache in the backend by sending random requests."""
+
 import argparse
 import random
 import string
 import time
 
+import sglang as sgl
 from sglang.test.test_utils import (
     add_common_sglang_args_and_parse,
     select_sglang_backend,
 )
-
-import sglang as sgl
 
 
 @sgl.function

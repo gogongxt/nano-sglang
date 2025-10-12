@@ -3,23 +3,22 @@ import json
 import time
 
 import sglang as sgl
+from agent_functions import (
+    action_location_object,
+    action_location_sector,
+    generate_event_triple,
+    generate_pronunciatio,
+    poignancy_event,
+)
 from sglang.test.test_utils import (
     add_common_sglang_args_and_parse,
     select_sglang_backend,
 )
-from sglang.utils import read_jsonl, dump_state_text
-
-from agent_functions import (
-    poignancy_event,
-    generate_event_triple,
-    generate_pronunciatio,
-    action_location_sector,
-    action_location_object,
-)
+from sglang.utils import dump_state_text, read_jsonl
 
 
 def main(args):
-    lines = read_jsonl(args.data_path)[:args.num_events]
+    lines = read_jsonl(args.data_path)[: args.num_events]
     mapping = {
         "poignancy_event": poignancy_event,
         "generate_event_triple": generate_event_triple,

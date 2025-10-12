@@ -3,7 +3,7 @@ import json
 import time
 
 import sglang as sgl
-from sglang.lang.ir import REGEX_INT, REGEX_STRING, REGEX_FLOAT
+from sglang.lang.ir import REGEX_FLOAT, REGEX_INT, REGEX_STRING
 from sglang.test.test_utils import (
     add_common_sglang_args_and_parse,
     select_sglang_backend,

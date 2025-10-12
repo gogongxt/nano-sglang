@@ -3,6 +3,7 @@ import time
 from argparse import ArgumentParser
 
 import sglang as sgl
+from data_gen import gen_arguments
 from sglang.test.test_utils import (
     add_common_sglang_args_and_parse,
     select_sglang_backend,
@@ -10,14 +11,12 @@ from sglang.test.test_utils import (
 from sglang.utils import dump_state_text
 from vllm.transformers_utils.tokenizer import get_tokenizer
 
-from data_gen import gen_arguments
-
 
 @sgl.function
 def multi_turns(s, qas):
     for qa in qas:
         s += qa["prompt"]
-        s += sgl.gen(max_tokens=qa["new_tokens"], ignore_eos=True) 
+        s += sgl.gen(max_tokens=qa["new_tokens"], ignore_eos=True)
 
 
 def main(args):

@@ -1,4 +1,5 @@
 import asyncio
+
 import sglang as sgl
 
 
@@ -18,7 +19,7 @@ def stream_a_variable():
     state = multi_turn_question.run(
         question_1="What is the capital of the United States?",
         question_2="List two local attractions.",
-        stream=True
+        stream=True,
     )
 
     for out in state.text_iter(var_name="answer_2"):
@@ -30,7 +31,7 @@ async def async_stream():
     state = multi_turn_question.run(
         question_1="What is the capital of the United States?",
         question_2="List two local attractions.",
-        stream=True
+        stream=True,
     )
 
     async for out in state.text_async_iter(var_name="answer_2"):

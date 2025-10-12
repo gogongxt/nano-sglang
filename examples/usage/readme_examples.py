@@ -4,7 +4,11 @@ import sglang as sgl
 @sgl.function
 def tool_use(s, question):
     s += "To answer this question: " + question + ", "
-    s += "I need to use a " + sgl.gen("tool", choices=["calculator", "web browser"]) + ". "
+    s += (
+        "I need to use a "
+        + sgl.gen("tool", choices=["calculator", "web browser"])
+        + ". "
+    )
     if s["tool"] == "calculator":
         s += "The math expression is" + sgl.gen("expression")
     elif s["tool"] == "web browser":
@@ -61,9 +65,7 @@ def driver_batching():
 
 
 def driver_stream():
-    state = text_qa.run(
-        question="What is the capital of France?",
-        temperature=0.1)
+    state = text_qa.run(question="What is the capital of France?", temperature=0.1)
 
     for out in state.text_iter():
         print(out, end="", flush=True)

@@ -1,17 +1,16 @@
-from sglang import function, gen, set_default_backend, Runtime
+from sglang import Runtime, function, gen, set_default_backend
 
 
 @function
 def few_shot_qa(s, question):
-    s += (
-"""The following are questions with answers.
+    s += """The following are questions with answers.
 Q: What is the capital of France?
 A: Paris
 Q: What is the capital of Germany?
 A: Berlin
 Q: What is the capital of Italy?
 A: Rome
-""")
+"""
     s += "Q: " + question + "\n"
     s += "A:" + gen("answer", stop="\n", temperature=0)
 

@@ -1,17 +1,16 @@
-from sglang import function, gen, set_default_backend, Anthropic
+from sglang import Anthropic, function, gen, set_default_backend
 
 
 @function
 def few_shot_qa(s, question):
-    s += (
-"""
+    s += """
 \n\nHuman: What is the capital of France?
 \n\nAssistant: Paris
 \n\nHuman: What is the capital of Germany?
 \n\nAssistant: Berlin
 \n\nHuman: What is the capital of Italy?
 \n\nAssistant: Rome
-""")
+"""
     s += "\n\nHuman: " + question + "\n"
     s += "\n\nAssistant:" + gen("answer", stop="\n", temperature=0)
 

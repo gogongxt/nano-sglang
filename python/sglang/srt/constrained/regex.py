@@ -109,9 +109,9 @@ def create_fsm_info(
 
     flat_transition_map = numba.typed.Dict.empty(nb_int_pair_type, numba.int64)
     for trans_key_and_state in flat_transition_map_items:
-        flat_transition_map[
-            (trans_key_and_state[0], trans_key_and_state[1])
-        ] = trans_key_and_state[2]
+        flat_transition_map[(trans_key_and_state[0], trans_key_and_state[1])] = (
+            trans_key_and_state[2]
+        )
 
     alphabet_symbol_map = numba.typed.Dict.empty(nb_unichar_1_type, numba.int64)
     for symbol_and_trans_key in alphabet_symbol_mapping_items:

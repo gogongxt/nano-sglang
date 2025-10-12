@@ -97,14 +97,16 @@ class MixtralMoE(nn.Module):
 
         self.experts = nn.ModuleList(
             [
-                MixtralMLP(
-                    self.num_total_experts,
-                    config.hidden_size,
-                    config.intermediate_size,
-                    linear_method=linear_method,
+                (
+                    MixtralMLP(
+                        self.num_total_experts,
+                        config.hidden_size,
+                        config.intermediate_size,
+                        linear_method=linear_method,
+                    )
+                    if idx in self.expert_indicies
+                    else None
                 )
-                if idx in self.expert_indicies
-                else None
                 for idx in range(self.num_total_experts)
             ]
         )
@@ -355,7 +357,7 @@ class MixtralForCausalLM(nn.Module):
         ):
             if "rotary_emb.inv_freq" in name:
                 continue
-            for (param_name, weight_name, shard_id) in stacked_params_mapping:
+            for param_name, weight_name, shard_id in stacked_params_mapping:
                 if weight_name not in name:
                     continue
                 name = name.replace(weight_name, param_name)

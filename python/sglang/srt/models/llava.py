@@ -1,4 +1,5 @@
 """Inference-only LLaVa model compatible with HuggingFace weights."""
+
 import json
 import os
 from typing import Any, Dict, List, Optional, Tuple
