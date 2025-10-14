@@ -5,11 +5,12 @@ from sglang.srt.layers.context_flashattention_nopad import context_attention_fwd
 from sglang.srt.layers.extend_attention import extend_attention_fwd
 from sglang.srt.layers.token_attention import token_attention_fwd
 from sglang.srt.managers.router.model_runner import ForwardMode, InputMetadata
+
+# from sglang.srt.parallel_utils.parallel_state import (
+#     get_tensor_model_parallel_rank,
+#     get_tensor_model_parallel_world_size,
+# )
 from torch import nn
-from vllm.model_executor.parallel_utils.parallel_state import (
-    get_tensor_model_parallel_rank,
-    get_tensor_model_parallel_world_size,
-)
 
 
 class RadixAttention(nn.Module):

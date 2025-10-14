@@ -19,15 +19,26 @@ class ReqToTokenPool:
         if need_size > self.can_use_mem_size:
             return None
 
-        select_index = torch.nonzero(self.mem_state).squeeze(1)[:need_size]
+        available_indices = torch.nonzero(self.mem_state)
+        if available_indices.numel() == 0:
+            return None
+        select_index = available_indices.squeeze(1)[:need_size]
+        if select_index.numel() == 0:
+            return None
         self.mem_state[select_index] = 0
         self.can_use_mem_size -= need_size
         return select_index.to(torch.int32)
 
     def free(self, free_index):
         if isinstance(free_index, (int,)):
+            # Clamp individual integer indices
+            free_index = max(0, min(free_index, len(self.mem_state) - 1))
             self.can_use_mem_size += 1
         else:
+            if len(free_index) == 0:
+                return
+            # Clamp tensor indices to prevent out of bounds access
+            free_index = torch.clamp(free_index, 0, len(self.mem_state) - 1)
             self.can_use_mem_size += free_index.shape[0]
         self.mem_state[free_index] = 1
 
@@ -57,16 +68,22 @@ class TokenToKVPool:
         return self.kv_data[layer_id][:, 1]
 
     def alloc(self, need_size):
-        select_index = torch.nonzero(self.mem_state == 0).squeeze(1)[:need_size]
-        if select_index.shape[0] < need_size:
+        available_indices = torch.nonzero(self.mem_state == 0)
+        if available_indices.numel() == 0:
+            return None
+        select_index = available_indices.squeeze(1)[:need_size]
+        if select_index.numel() < need_size:
             return None
 
         self.add_refs(select_index)
         return select_index.to(torch.int32)
 
     def alloc_contiguous(self, need_size):
-        empty_index = torch.nonzero(self.mem_state == 0).squeeze(1)[:need_size]
-        if empty_index.shape[0] < need_size:
+        available_indices = torch.nonzero(self.mem_state == 0)
+        if available_indices.numel() == 0:
+            return None
+        empty_index = available_indices.squeeze(1)[:need_size]
+        if empty_index.numel() < need_size:
             return None
         empty_size = len(empty_index)
         loc_sum = (
@@ -87,16 +104,25 @@ class TokenToKVPool:
         return self.decrease_refs(free_index)
 
     def used_size(self):
-        return len(torch.nonzero(self.mem_state).squeeze(1))
+        nonzero_indices = torch.nonzero(self.mem_state)
+        return nonzero_indices.numel()
 
     def available_size(self):
         return torch.sum(self.mem_state == 0).item()
 
     def add_refs(self, token_index: torch.Tensor):
+        if len(token_index) == 0:
+            return
+        # Clamp indices to prevent out of bounds access
+        token_index = torch.clamp(token_index, 0, len(self.mem_state) - 1)
         self.alloc_ct += len(token_index)
         self.mem_state[token_index] += 1
 
     def decrease_refs(self, token_index: torch.Tensor):
+        if len(token_index) == 0:
+            return 0
+        # Clamp indices to prevent out of bounds access
+        token_index = torch.clamp(token_index, 0, len(self.mem_state) - 1)
         self.alloc_ct -= len(token_index)
         self.mem_state[token_index] -= 1
 

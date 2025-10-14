@@ -6,11 +6,10 @@ import numpy as np
 import torch
 from sglang.srt.managers.router.infer_batch import Batch, ForwardMode
 from sglang.srt.memory_pool import ReqToTokenPool, TokenToKVPool
-from sglang.srt.utils import is_multimodal_model
+from sglang.srt.parallel_utils.parallel_state import initialize_model_parallel
+from sglang.srt.utils import _set_default_torch_dtype, is_multimodal_model
 from sglang.utils import get_available_gpu_memory
 from vllm.model_executor.layers.quantization.awq import AWQConfig
-from vllm.model_executor.model_loader import _set_default_torch_dtype
-from vllm.model_executor.parallel_utils.parallel_state import initialize_model_parallel
 
 # for model_mode
 global_model_mode: List[str] = []
@@ -234,9 +233,9 @@ class ModelRunner:
     def load_model(self):
         """See also vllm/model_executor/model_loader.py::get_model"""
         from sglang.srt.models.llama2 import LlamaForCausalLM
-        from sglang.srt.models.llava import LlavaLlamaForCausalLM
-        from sglang.srt.models.mixtral import MixtralForCausalLM
 
+        # from sglang.srt.models.llava import LlavaLlamaForCausalLM
+        # from sglang.srt.models.mixtral import MixtralForCausalLM
         # Select model class
         architectures = getattr(self.model_config.hf_config, "architectures", [])
 
@@ -245,15 +244,15 @@ class ModelRunner:
             if arch == "LlamaForCausalLM":
                 model_class = LlamaForCausalLM
                 break
-            if arch == "MistralForCausalLM":
-                model_class = LlamaForCausalLM
-                break
-            if arch == "LlavaLlamaForCausalLM":
-                model_class = LlavaLlamaForCausalLM
-                break
-            if arch == "MixtralForCausalLM":
-                model_class = MixtralForCausalLM
-                break
+            # if arch == "MistralForCausalLM":
+            #     model_class = LlamaForCausalLM
+            #     break
+            # if arch == "LlavaLlamaForCausalLM":
+            #     model_class = LlavaLlamaForCausalLM
+            #     break
+            # if arch == "MixtralForCausalLM":
+            #     model_class = MixtralForCausalLM
+            #     break
         if model_class is None:
             raise ValueError(f"Unsupported architectures: {architectures}")
 

@@ -279,8 +279,8 @@ class Batch:
     def sample(self, logits: torch.Tensor):
         # Post process logits
         logits = logits.contiguous()
-        logits.div_(self.temperatures)
-        logits.add_(self.logit_bias)
+        logits = logits / self.temperatures
+        logits = logits + self.logit_bias
 
         has_regex = any(req.regex_fsm is not None for req in self.reqs)
         if has_regex:
@@ -316,6 +316,11 @@ class Batch:
 
 
 def _top_p_top_k(probs: torch.Tensor, top_ps: torch.Tensor, top_ks: torch.Tensor):
+    # Handle both 2D [batch, vocab] and 3D [batch, seq, vocab] tensors
+    if probs.dim() == 3:
+        # For 3D tensors, we only want to sample from the last token
+        probs = probs[:, -1, :]  # Take the last token in sequence
+
     probs_sort, probs_idx = probs.sort(dim=-1, descending=True)
     probs_sum = torch.cumsum(probs_sort, dim=-1)
     probs_sort[(probs_sum - probs_sort) > top_ps] = 0.0

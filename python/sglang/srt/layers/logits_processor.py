@@ -1,11 +1,11 @@
 import torch
 from sglang.srt.layers.get_selected_logprob import get_selected_logprob
 from sglang.srt.managers.router.model_runner import ForwardMode, InputMetadata
-from torch import nn
-from vllm.model_executor.parallel_utils.communication_op import (
+from sglang.srt.parallel_utils.parallel_state import (
     get_tensor_model_parallel_world_size,
     tensor_model_parallel_all_gather,
 )
+from torch import nn
 
 
 class LogitsProcessor(nn.Module):
@@ -17,7 +17,14 @@ class LogitsProcessor(nn.Module):
     def forward(self, input_ids, hidden_states, weight, input_metadata):
         if not input_metadata.return_normalized_logprob:
             if input_metadata.forward_mode == ForwardMode.DECODE:
-                last_hidden = hidden_states
+                # For decode mode, hidden_states should be [batch, hidden_dim]
+                # But if it has an extra sequence dimension, extract the last token
+                if hidden_states.dim() == 3:
+                    last_hidden = hidden_states[
+                        :, -1, :
+                    ]  # [batch, seq, hidden] -> [batch, hidden]
+                else:
+                    last_hidden = hidden_states
             else:
                 last_index = (
                     torch.cumsum(
@@ -27,6 +34,8 @@ class LogitsProcessor(nn.Module):
                     )
                     - 1
                 )
+                # Clamp last_index to prevent out of bounds
+                last_index = torch.clamp(last_index, 0, hidden_states.shape[0] - 1)
                 last_hidden = hidden_states[last_index]
                 hidden_states = None
 
@@ -58,6 +67,8 @@ class LogitsProcessor(nn.Module):
                 input_ids,
             )
 
+            # Clamp last_index to prevent out of bounds
+            last_index = torch.clamp(last_index, 0, logits.shape[0] - 1)
             last_logits = logits[last_index]
             return last_logits, normalized_logprobs
 
