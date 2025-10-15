@@ -19,7 +19,6 @@ import uvicorn
 import uvloop
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
-from sglang.backend.runtime_endpoint import RuntimeEndpoint
 from sglang.srt.managers.detokenizer_manager import start_detokenizer_process
 from sglang.srt.managers.io_struct import GenerateReqInput
 from sglang.srt.managers.openai_protocol import CompletionRequest
@@ -159,65 +158,3 @@ def launch_server(server_args, pipe_finish_writer):
             pipe_finish_writer.send("init ok")
         else:
             pipe_finish_writer.send(str(e))
-
-
-class Runtime:
-    def __init__(
-        self,
-        model_path: str,
-        tokenizer_path: Optional[str] = None,
-        load_format: str = "auto",
-        tokenizer_mode: str = "auto",
-        trust_remote_code: bool = True,
-        mem_fraction_static: float = 0.9,
-        tp_size: int = 1,
-        model_mode: List[str] = (),
-        schedule_heuristic: str = "lpm",
-        random_seed: int = 42,
-        log_level: str = "warning",
-    ):
-        host = "127.0.0.1"
-        port = alloc_usable_network_port(1)[0]
-        server_args = ServerArgs(
-            model_path=model_path,
-            tokenizer_path=tokenizer_path,
-            host=host,
-            port=port,
-            load_format=load_format,
-            tokenizer_mode=tokenizer_mode,
-            trust_remote_code=trust_remote_code,
-            mem_fraction_static=mem_fraction_static,
-            tp_size=tp_size,
-            model_mode=model_mode,
-            schedule_heuristic=schedule_heuristic,
-            random_seed=random_seed,
-            log_level=log_level,
-        )
-        self.url = server_args.url()
-
-        self.pid = None
-        pipe_reader, pipe_writer = mp.Pipe(duplex=False)
-        proc = mp.Process(target=launch_server, args=(server_args, pipe_writer))
-        proc.start()
-        self.pid = proc.pid
-
-        init_state = pipe_reader.recv()
-        if init_state != "init ok":
-            self.shutdown()
-            raise RuntimeError("Launch failed")
-
-        self.endpoint = RuntimeEndpoint(self.url)
-
-    def shutdown(self):
-        if self.pid is not None:
-            parent = psutil.Process(self.pid)
-            children = parent.children(recursive=True)
-            for child in children:
-                child.kill()
-            psutil.wait_procs(children, timeout=5)
-            parent.kill()
-            parent.wait(timeout=5)
-            self.pid = None
-
-    def __del__(self):
-        self.shutdown()
