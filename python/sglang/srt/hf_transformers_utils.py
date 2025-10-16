@@ -16,19 +16,6 @@ from transformers import (
 )
 
 
-def download_from_hf(model_path: str):
-    if os.path.exists(model_path):
-        return model_path
-
-    return snapshot_download(model_path, allow_patterns=["*.json", "*.bin", "*.model"])
-
-
-def get_config_json(model_path: str):
-    with open(os.path.join(model_path, "config.json")) as f:
-        config = json.load(f)
-    return config
-
-
 def get_config(model: str, trust_remote_code: bool, revision: Optional[str] = None):
     config = AutoConfig.from_pretrained(
         model, trust_remote_code=trust_remote_code, revision=revision
