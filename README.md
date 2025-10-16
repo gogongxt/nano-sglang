@@ -166,6 +166,10 @@ pre-commit install
 pre-commit run --all-files
 ```
 
+## 🌟Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=gogongxt/nano-sglang&type=date&legend=top-left)](https://www.star-history.com/#gogongxt/nano-sglang&type=date&legend=top-left)
+
 ---
 
 **Note**: This project prioritizes educational clarity over raw performance. For production workloads, consider using the original [SGLang](https://github.com/sgl-project/sglang) framework.
