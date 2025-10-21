@@ -21,3 +21,9 @@ python3 -m sglang.launch_server \
 --model-path /tmp-data/models/Llama-2-7B-AWQ \
 --port 30000 \
 --mem-fraction-static 0.8 --tp 2
+
+# python3 -m sglang.launch_server \
+# --model-path /tmp-data/models/llama-2-7b \
+# --port 30000 \
+# --mem-fraction-static 0.8 --tp 2 \
+# --model-mode flashinfer

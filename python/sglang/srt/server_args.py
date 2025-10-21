@@ -17,8 +17,6 @@ class ServerArgs:
     model_mode: List[str] = ()
     schedule_heuristic: str = "lpm"
     random_seed: int = 42
-    disable_log_stats: bool = False
-    log_stats_interval: int = 10
     log_level: str = "info"
 
     def __post_init__(self):
@@ -114,31 +112,17 @@ class ServerArgs:
             default=ServerArgs.log_level,
             help="Log level",
         )
-        parser.add_argument(
-            "--disable-log-stats",
-            action="store_true",
-            help="Disable logging throughput stats.",
-        )
-        parser.add_argument(
-            "--log-stats-interval",
-            type=int,
-            default=ServerArgs.log_stats_interval,
-            help="Log stats interval in second.",
-        )
 
     @classmethod
     def from_cli_args(cls, args: argparse.Namespace):
         attrs = [attr.name for attr in dataclasses.fields(cls)]
         return cls(**{attr: getattr(args, attr) for attr in attrs})
 
-    def url(self):
-        return f"http://{self.host}:{self.port}"
-
 
 @dataclasses.dataclass
 class PortArgs:
-    tokenizer_port: int
-    router_port: int
-    detokenizer_port: int
-    nccl_port: int
-    model_rpc_ports: List[int]
+    tokenizer_port: int  # Port for tokenizer manager communication
+    router_port: int  # Port for router process communication and load balancing
+    detokenizer_port: int  # Port for detokenizer process communication
+    nccl_port: int  # Port for NCCL multi-GPU communication
+    model_rpc_ports: List[int]  # Ports for model RPC calls (tensor parallelism)
