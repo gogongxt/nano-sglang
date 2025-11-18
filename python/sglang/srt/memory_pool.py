@@ -45,10 +45,6 @@ class ReqToTokenPool:
         # if self.can_use_mem_size == len(self.mem_state):
         #     print(f"ReqToTokenPool: freed all. size = {self.can_use_mem_size}.")
 
-    def clear(self):
-        self.mem_state.fill_(1)
-        self.can_use_mem_size = len(self.mem_state)
-
 
 class TokenToKVPool:
     def __init__(self, size, dtype, head_num, head_dim, layer_num):
@@ -103,10 +99,6 @@ class TokenToKVPool:
     def free(self, free_index):
         return self.decrease_refs(free_index)
 
-    def used_size(self):
-        nonzero_indices = torch.nonzero(self.mem_state)
-        return nonzero_indices.numel()
-
     def available_size(self):
         return torch.sum(self.mem_state == 0).item()
 
@@ -132,7 +124,3 @@ class TokenToKVPool:
         #     print(f"TokenToKVPool: freed all. size = {len(self.mem_state)}.")
 
         return num_freed
-
-    def clear(self):
-        self.mem_state.fill_(0)
-        self.alloc_ct = 0

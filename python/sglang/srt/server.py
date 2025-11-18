@@ -1,20 +1,14 @@
 """SRT: SGLang Runtime"""
 
-import argparse
 import asyncio
-import dataclasses
 import json
 import multiprocessing as mp
 import sys
 import threading
-import time
-from typing import List, Optional
 
 # Fix a Python bug
 setattr(threading, "_register_atexit", lambda *args, **kwargs: None)
 
-import psutil
-import requests
 import uvicorn
 import uvloop
 from fastapi import FastAPI
@@ -76,7 +70,7 @@ async def v1_completions(obj: CompletionRequest):
     }
 
 
-def launch_server(server_args, pipe_finish_writer):
+def launch_server(server_args):
     global tokenizer_manager
 
     # Allocate ports
@@ -141,20 +135,3 @@ def launch_server(server_args, pipe_finish_writer):
 
     t = threading.Thread(target=launch_server)
     t.start()
-
-    if pipe_finish_writer:
-        url = server_args.url()
-
-        success = False
-        for i in range(60):
-            try:
-                res = requests.get(url + "/get_model_info", timeout=5)
-                success = True
-                break
-            except requests.exceptions.RequestException as e:
-                time.sleep(1)
-
-        if success:
-            pipe_finish_writer.send("init ok")
-        else:
-            pipe_finish_writer.send(str(e))

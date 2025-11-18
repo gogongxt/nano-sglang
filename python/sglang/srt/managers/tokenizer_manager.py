@@ -77,7 +77,7 @@ class TokenizerManager:
         self.hf_config = get_config(
             self.model_path, trust_remote_code=server_args.trust_remote_code
         )
-        self.context_len = get_context_length(self.hf_config)
+        self.context_len = get_context_length(self.hf_config)  # 4096 llama2-7b
 
         if is_multimodal_model(self.model_path):
             self.processor = get_processor(

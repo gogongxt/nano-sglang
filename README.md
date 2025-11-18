@@ -40,7 +40,7 @@ nano-sglang is created to help developers understand the internal workings of mo
 ```bash
 # Clone the repository
 git clone https://github.com/your-username/nano-sglang.git
-cd nano-sglang
+cd nano-sglang/python
 
 # Install with all dependencies
 pip install -e ".[all]"

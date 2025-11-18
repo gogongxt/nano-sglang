@@ -4,7 +4,6 @@ import logging
 import uvloop
 import zmq
 import zmq.asyncio
-from sglang.srt.backend_config import GLOBAL_BACKEND_CONFIG
 from sglang.srt.managers.router.model_rpc import ModelRpcClient
 from sglang.srt.server_args import PortArgs, ServerArgs
 from sglang.srt.utils import get_exception_traceback
@@ -29,7 +28,7 @@ class RouterManager:
         self.recv_reqs = []
 
         # Init Some Configs
-        self.extend_dependency_time = GLOBAL_BACKEND_CONFIG.extend_dependency_time
+        self.extend_dependency_time = 0.03
 
     async def loop_for_forward(self):
         while True:
