@@ -233,9 +233,9 @@ class ModelRunner:
     def load_model(self):
         """See also vllm/model_executor/model_loader.py::get_model"""
         from sglang.srt.models.llama2 import LlamaForCausalLM
+        from sglang.srt.models.llava import LlavaLlamaForCausalLM
+        from sglang.srt.models.mixtral import MixtralForCausalLM
 
-        # from sglang.srt.models.llava import LlavaLlamaForCausalLM
-        # from sglang.srt.models.mixtral import MixtralForCausalLM
         # Select model class
         architectures = getattr(self.model_config.hf_config, "architectures", [])
 
@@ -244,15 +244,15 @@ class ModelRunner:
             if arch == "LlamaForCausalLM":
                 model_class = LlamaForCausalLM
                 break
-            # if arch == "MistralForCausalLM":
-            #     model_class = LlamaForCausalLM
-            #     break
-            # if arch == "LlavaLlamaForCausalLM":
-            #     model_class = LlavaLlamaForCausalLM
-            #     break
-            # if arch == "MixtralForCausalLM":
-            #     model_class = MixtralForCausalLM
-            #     break
+            if arch == "MistralForCausalLM":
+                model_class = LlamaForCausalLM
+                break
+            if arch == "LlavaLlamaForCausalLM":
+                model_class = LlavaLlamaForCausalLM
+                break
+            if arch == "MixtralForCausalLM":
+                model_class = MixtralForCausalLM
+                break
         if model_class is None:
             raise ValueError(f"Unsupported architectures: {architectures}")
 
