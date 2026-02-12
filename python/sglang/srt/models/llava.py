@@ -6,17 +6,19 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import torch
+from sglang.srt.layers.linear import (
+    LinearMethodBase,
+)
 from sglang.srt.managers.router.infer_batch import ForwardMode
 from sglang.srt.managers.router.model_runner import InputMetadata
 from sglang.srt.models.llama2 import LlamaForCausalLM
-from torch import nn
-from transformers import CLIPImageProcessor, CLIPVisionModel, LlavaConfig
-from transformers.models.llava.modeling_llava import LlavaMultiModalProjector
-from vllm.model_executor.layers.linear import LinearMethodBase
-from vllm.model_executor.weight_utils import (
+from sglang.srt.utils import (
     default_weight_loader,
     hf_model_weights_iterator,
 )
+from torch import nn
+from transformers import CLIPImageProcessor, CLIPVisionModel, LlavaConfig
+from transformers.models.llava.modeling_llava import LlavaMultiModalProjector
 
 
 class LlavaLlamaForCausalLM(nn.Module):
