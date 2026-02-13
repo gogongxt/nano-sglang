@@ -5,11 +5,6 @@ from sglang.srt.layers.context_flashattention_nopad import context_attention_fwd
 from sglang.srt.layers.extend_attention import extend_attention_fwd
 from sglang.srt.layers.token_attention import token_attention_fwd
 from sglang.srt.managers.router.model_runner import ForwardMode, InputMetadata
-
-# from sglang.srt.parallel_utils.parallel_state import (
-#     get_tensor_model_parallel_rank,
-#     get_tensor_model_parallel_world_size,
-# )
 from torch import nn
 
 
@@ -72,12 +67,9 @@ class RadixAttention(nn.Module):
             input_metadata.token_to_kv_pool.get_value_buffer(self.layer_id),
             input_metadata.req_to_token_pool.req_to_token,
             input_metadata.req_pool_indices,
-            input_metadata.start_loc,
             input_metadata.seq_lens,
-            input_metadata.prefix_lens,
             input_metadata.extend_start_loc,
             input_metadata.extend_seq_lens,
-            input_metadata.max_seq_len,
             input_metadata.max_extend_len,
         )
 
