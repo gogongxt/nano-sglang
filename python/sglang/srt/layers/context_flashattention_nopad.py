@@ -3,7 +3,6 @@
 import torch
 import triton
 import triton.language as tl
-from sglang.srt.utils import wrap_kernel_launcher
 
 
 @triton.jit
@@ -134,9 +133,8 @@ def context_attention_fwd(q, k, v, o, b_start_loc, b_seq_len, max_input_len):
 
     global cached_kernel
     if cached_kernel:
-        cached_kernel(
-            grid,
-            num_warps,
+
+        cached_kernel[grid](
             q,
             k,
             v,
@@ -156,15 +154,12 @@ def context_attention_fwd(q, k, v, o, b_start_loc, b_seq_len, max_input_len):
             BLOCK_M=BLOCK,
             BLOCK_DMODEL=Lk,
             BLOCK_N=BLOCK,
+            num_warps=num_warps,
             num_stages=1,
         )
         return
 
-    # Launch kernel using modern Triton API
-    kernel_launcher = wrap_kernel_launcher(_fwd_kernel)
-    kernel_launcher(
-        grid,
-        num_warps,
+    _fwd_kernel[grid](
         q,
         k,
         v,
@@ -184,6 +179,7 @@ def context_attention_fwd(q, k, v, o, b_start_loc, b_seq_len, max_input_len):
         BLOCK_M=BLOCK,
         BLOCK_DMODEL=Lk,
         BLOCK_N=BLOCK,
+        num_warps=num_warps,
         num_stages=1,
     )
-    cached_kernel = kernel_launcher
+    cached_kernel = _fwd_kernel

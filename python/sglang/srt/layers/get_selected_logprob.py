@@ -1,7 +1,6 @@
 import torch
 import triton
 import triton.language as tl
-from sglang.srt.utils import wrap_kernel_launcher
 
 
 @triton.jit
@@ -39,9 +38,8 @@ def get_selected_logprob(all_logits, len_add_1, input_ids, logprobs):
 
     global cached_kernel
     if cached_kernel:
-        cached_kernel(
-            grid,
-            4,
+
+        cached_kernel[grid](
             all_logits,
             len_add_1,
             cum_len,
@@ -50,14 +48,11 @@ def get_selected_logprob(all_logits, len_add_1, input_ids, logprobs):
             max_seq_len,
             voc_size,
             BLOCK_SIZE=128,
+            num_warps=4,
         )
         return
 
-    # Launch kernel using modern Triton API
-    kernel_launcher = wrap_kernel_launcher(_fwd_segmented_gather)
-    kernel_launcher(
-        grid,
-        4,
+    _fwd_segmented_gather[grid](
         all_logits,
         len_add_1,
         cum_len,
@@ -66,8 +61,9 @@ def get_selected_logprob(all_logits, len_add_1, input_ids, logprobs):
         max_seq_len,
         voc_size,
         BLOCK_SIZE=128,
+        num_warps=4,
     )
-    cached_kernel = kernel_launcher
+    cached_kernel = _fwd_segmented_gather
 
 
 if __name__ == "__main__":

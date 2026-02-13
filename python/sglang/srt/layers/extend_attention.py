@@ -2,7 +2,6 @@ import torch
 import triton
 import triton.language as tl
 from sglang.srt.layers.context_flashattention_nopad import context_attention_fwd
-from sglang.srt.utils import wrap_kernel_launcher
 
 
 @triton.jit
@@ -191,11 +190,7 @@ def extend_attention_fwd(
     num_warps = 4 if Lk <= 64 else 8
     num_stages = 1
 
-    # Launch kernel using modern Triton API
-    kernel_launcher = wrap_kernel_launcher(_fwd_kernel)
-    kernel_launcher(
-        grid,
-        num_warps,
+    _fwd_kernel[grid](
         q_extend,
         k_extend,
         v_extend,
@@ -225,5 +220,6 @@ def extend_attention_fwd(
         BLOCK_DMODEL=Lq,
         BLOCK_M=BLOCK_M,
         BLOCK_N=BLOCK_N,
+        num_warps=num_warps,
         num_stages=num_stages,
     )
