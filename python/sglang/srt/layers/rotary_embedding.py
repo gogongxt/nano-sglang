@@ -117,11 +117,13 @@ class RotaryEmbedding(nn.Module):
 
         cos_sin = self.cos_sin_cache[positions_wrapped]
         cos, sin = cos_sin.chunk(2, dim=-1)
+
         if self.is_neox_style:
-            # NOTE(woosuk): Here we assume that the positions tensor has the
-            # shape [batch_size, seq_len].
-            cos = cos.repeat(1, 1, 2).unsqueeze(-2)
-            sin = sin.repeat(1, 1, 2).unsqueeze(-2)
+            # cos/sin shape after chunk: [num_positions, rotary_dim // 2]
+            # query_rot shape: [num_tokens, num_heads, rotary_dim]
+            # We need to repeat cos/sin to match full rotary_dim and add head dimension
+            cos = cos.repeat(1, 2).unsqueeze(1)
+            sin = sin.repeat(1, 2).unsqueeze(1)
         else:
             cos = cos.repeat_interleave(2, dim=-1).unsqueeze(-2)
             sin = sin.repeat_interleave(2, dim=-1).unsqueeze(-2)
@@ -138,6 +140,7 @@ class RotaryEmbedding(nn.Module):
             key = key_rot
         query = query.flatten(-2)
         key = key.flatten(-2)
+
         return query, key
 
 

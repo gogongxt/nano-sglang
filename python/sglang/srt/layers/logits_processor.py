@@ -15,17 +15,14 @@ class LogitsProcessor(nn.Module):
         self.tp_size = get_tensor_model_parallel_world_size()
 
     def forward(self, input_ids, hidden_states, weight, input_metadata):
+        # hidden_states is guaranteed to be 2D: [tokens/batch, hidden_dim]
         if not input_metadata.return_normalized_logprob:
             if input_metadata.forward_mode == ForwardMode.DECODE:
-                # For decode mode, hidden_states should be [batch, hidden_dim]
-                # But if it has an extra sequence dimension, extract the last token
-                if hidden_states.dim() == 3:
-                    last_hidden = hidden_states[
-                        :, -1, :
-                    ]  # [batch, seq, hidden] -> [batch, hidden]
-                else:
-                    last_hidden = hidden_states
+                # DECODE mode: hidden_states is [batch, hidden_dim]
+                last_hidden = hidden_states
             else:
+                # EXTEND mode: hidden_states is [total_tokens, hidden_dim]
+                # Extract the last token of each sequence
                 last_index = (
                     torch.cumsum(
                         input_metadata.seq_lens - input_metadata.prefix_lens,
@@ -46,6 +43,7 @@ class LogitsProcessor(nn.Module):
             return last_logits, None
         else:
             assert input_metadata.forward_mode != ForwardMode.DECODE
+            # hidden_states is [total_tokens, hidden_dim]
             last_index = (
                 torch.cumsum(
                     input_metadata.seq_lens - input_metadata.prefix_lens,
