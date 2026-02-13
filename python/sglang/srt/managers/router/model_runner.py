@@ -118,7 +118,6 @@ class InputMetadata:
         req_pool_indices,
         seq_lens,
         prefix_lens,
-        position_ids_offsets,
         out_cache_loc,
         out_cache_cont_start=None,
         out_cache_cont_end=None,
@@ -131,20 +130,19 @@ class InputMetadata:
         max_seq_len = int(torch.max(seq_lens))
 
         if forward_mode == ForwardMode.DECODE:
-            positions = ((seq_lens - 1) + position_ids_offsets).to(torch.int64)
+            positions = (seq_lens - 1).to(torch.int64)
             other_kv_index = model_runner.req_to_token_pool.req_to_token[
                 req_pool_indices[0], seq_lens[0] - 1
             ].item()
         else:
             seq_lens_np = seq_lens.cpu().numpy()
             prefix_lens_np = prefix_lens.cpu().numpy()
-            position_ids_offsets_np = position_ids_offsets.cpu().numpy()
             positions = torch.tensor(
                 np.concatenate(
                     [
                         np.arange(
-                            prefix_lens_np[i] + position_ids_offsets_np[i],
-                            seq_lens_np[i] + position_ids_offsets_np[i],
+                            prefix_lens_np[i],
+                            seq_lens_np[i],
                         )
                         for i in range(batch_size)
                     ],
@@ -316,7 +314,6 @@ class ModelRunner:
         req_pool_indices,
         seq_lens,
         prefix_lens,
-        position_ids_offsets,
         out_cache_loc,
         return_normalized_logprob,
     ):
@@ -327,7 +324,6 @@ class ModelRunner:
             req_pool_indices=req_pool_indices,
             seq_lens=seq_lens,
             prefix_lens=prefix_lens,
-            position_ids_offsets=position_ids_offsets,
             out_cache_loc=out_cache_loc,
             return_normalized_logprob=return_normalized_logprob,
         )
@@ -340,7 +336,6 @@ class ModelRunner:
         req_pool_indices,
         seq_lens,
         prefix_lens,
-        position_ids_offsets,
         out_cache_loc,
         return_normalized_logprob,
     ):
@@ -351,7 +346,6 @@ class ModelRunner:
             req_pool_indices=req_pool_indices,
             seq_lens=seq_lens,
             prefix_lens=prefix_lens,
-            position_ids_offsets=position_ids_offsets,
             out_cache_loc=out_cache_loc,
             return_normalized_logprob=return_normalized_logprob,
         )
@@ -364,7 +358,6 @@ class ModelRunner:
         req_pool_indices,
         seq_lens,
         prefix_lens,
-        position_ids_offsets,
         out_cache_loc,
         out_cache_cont_start,
         out_cache_cont_end,
@@ -376,7 +369,6 @@ class ModelRunner:
             req_pool_indices=req_pool_indices,
             seq_lens=seq_lens,
             prefix_lens=prefix_lens,
-            position_ids_offsets=position_ids_offsets,
             out_cache_loc=out_cache_loc,
             out_cache_cont_start=out_cache_cont_start,
             out_cache_cont_end=out_cache_cont_end,
@@ -394,7 +386,6 @@ class ModelRunner:
         req_pool_indices,
         seq_lens,
         prefix_lens,
-        position_ids_offsets,
         out_cache_loc,
         return_normalized_logprob,
     ):
@@ -405,7 +396,6 @@ class ModelRunner:
             req_pool_indices=req_pool_indices,
             seq_lens=seq_lens,
             prefix_lens=prefix_lens,
-            position_ids_offsets=position_ids_offsets,
             out_cache_loc=out_cache_loc,
             return_normalized_logprob=return_normalized_logprob,
         )
@@ -428,7 +418,6 @@ class ModelRunner:
                 "req_pool_indices": batch.req_pool_indices,
                 "seq_lens": batch.seq_lens,
                 "prefix_lens": batch.prefix_lens,
-                "position_ids_offsets": batch.position_ids_offsets,
                 "out_cache_loc": batch.out_cache_loc,
             }
             kwargs["return_normalized_logprob"] = return_normalized_logprob
@@ -439,7 +428,6 @@ class ModelRunner:
                 "req_pool_indices": batch.req_pool_indices,
                 "seq_lens": batch.seq_lens,
                 "prefix_lens": batch.prefix_lens,
-                "position_ids_offsets": batch.position_ids_offsets,
                 "out_cache_loc": batch.out_cache_loc,
             }
 

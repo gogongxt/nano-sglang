@@ -130,8 +130,6 @@ class Batch:
 
             seq_lens.append(prefix_lens[-1] + extend_lens[-1])
 
-        position_ids_offsets = torch.zeros((bs,), dtype=torch.int32, device=device)
-
         # Alloc mem
         seq_lens, prefix_lens = np.array(seq_lens), np.array(prefix_lens)
         extend_num_tokens = seq_lens.sum() - prefix_lens.sum()
@@ -169,7 +167,6 @@ class Batch:
         self.req_pool_indices = req_pool_indices
         self.seq_lens = torch.tensor(seq_lens, dtype=torch.int32, device=device)
         self.prefix_lens = torch.tensor(prefix_lens, dtype=torch.int32, device=device)
-        self.position_ids_offsets = position_ids_offsets
         self.extend_num_tokens = extend_num_tokens
         self.out_cache_loc = out_cache_loc
 
@@ -238,7 +235,6 @@ class Batch:
         self.input_ids = None
         self.req_pool_indices = self.req_pool_indices[new_indices]
         self.prefix_lens = None
-        self.position_ids_offsets = self.position_ids_offsets[new_indices]
         self.out_cache_loc = self.out_cache_cont_start = self.out_cache_cont_end = None
 
         for item in [
@@ -259,9 +255,6 @@ class Batch:
         )
         self.seq_lens = torch.concat([self.seq_lens, other.seq_lens])
         self.prefix_lens = None
-        self.position_ids_offsets = torch.concat(
-            [self.position_ids_offsets, other.position_ids_offsets]
-        )
         self.out_cache_loc = self.out_cache_cont_start = self.out_cache_cont_end = None
 
         for item in [
