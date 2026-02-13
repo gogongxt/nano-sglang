@@ -74,10 +74,7 @@ class InputMetadata:
             BatchPrefillWithPagedKVCacheWrapper,
         )
 
-        if (
-            self.forward_mode == ForwardMode.PREFILL
-            or self.forward_mode == ForwardMode.EXTEND
-        ):
+        if self.forward_mode == ForwardMode.EXTEND:
             self.qo_indptr = torch.zeros(
                 (self.batch_size + 1,), dtype=torch.int32, device="cuda"
             )
@@ -308,28 +305,6 @@ class ModelRunner:
         )
 
     @torch.inference_mode()
-    def forward_prefill(
-        self,
-        input_ids,
-        req_pool_indices,
-        seq_lens,
-        prefix_lens,
-        out_cache_loc,
-        return_normalized_logprob,
-    ):
-        input_metadata = InputMetadata.create(
-            self,
-            forward_mode=ForwardMode.PREFILL,
-            tp_size=self.tp_size,
-            req_pool_indices=req_pool_indices,
-            seq_lens=seq_lens,
-            prefix_lens=prefix_lens,
-            out_cache_loc=out_cache_loc,
-            return_normalized_logprob=return_normalized_logprob,
-        )
-        return self.model.forward(input_ids, input_metadata.positions, input_metadata)
-
-    @torch.inference_mode()
     def forward_extend(
         self,
         input_ids,
@@ -438,8 +413,5 @@ class ModelRunner:
         elif forward_mode == ForwardMode.EXTEND:
             kwargs["return_normalized_logprob"] = return_normalized_logprob
             return self.forward_extend(**kwargs)
-        elif forward_mode == ForwardMode.PREFILL:
-            kwargs["return_normalized_logprob"] = return_normalized_logprob
-            return self.forward_prefill(**kwargs)
         else:
-            raise ValueError(f"Invaid forward mode: {forward_mode}")
+            raise ValueError(f"Invalid forward mode: {forward_mode}")

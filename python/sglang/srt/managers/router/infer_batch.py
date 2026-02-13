@@ -8,7 +8,6 @@ from sglang.srt.memory_pool import ReqToTokenPool, TokenToKVPool
 
 
 class ForwardMode(Enum):
-    PREFILL = auto()
     EXTEND = auto()
     DECODE = auto()
 
