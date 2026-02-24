@@ -1,0 +1,41 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python: Attach to Process",
+      "type": "python",
+      "request": "attach",
+      "processId": "${command:pickProcess}"
+    },
+    {
+      "name": "Python: Attach by Port (default 5678)",
+      "type": "python",
+      "request": "attach",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 5678
+      }
+    },
+    {
+      "name": "Python: Debug Llama Extend",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/test/test_llama_extend.py",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": {
+          "PYTHONPATH": "${workspaceFolder}",
+          "CUDA_VISIBLE_DEVICES": "0"
+      },
+      "args": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "debugPort",
+      "type": "promptString",
+      "description": "Enter debugpy port number",
+      "default": "5678"
+    }
+  ]
+}
