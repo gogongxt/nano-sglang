@@ -242,7 +242,6 @@ class ModelRpcServer(rpyc.Service):
         can_run_list = []
         new_batch_total_tokens = 0
         new_batch_input_tokens = 0
-        new_batch_prefix_tokens = 0
 
         available_size = (
             self.token_to_kv_pool.available_size() + self.tree_cache.evictable_size()
