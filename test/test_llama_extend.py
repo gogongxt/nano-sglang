@@ -18,14 +18,14 @@ def test_generate_worker(model_path, tp_rank, tp_size, nccl_port):
         "The capital of France is",
         "Today is a sunny day and I like",
     ]
-    sampling_params = SamplingParams(temperature=0)
+    cut_num = [3, 4]
 
-    cut_num = 4
+    sampling_params = SamplingParams(temperature=0)
 
     reqs = []
     for i in range(len(prompts)):
         req = Req(i)
-        req.input_ids = tokenizer.encode(prompts[i])[:cut_num]
+        req.input_ids = tokenizer.encode(prompts[i])[: cut_num[i]]
         req.sampling_params = sampling_params
         reqs.append(req)
 
@@ -44,9 +44,9 @@ def test_generate_worker(model_path, tp_rank, tp_size, nccl_port):
     # Extend
     for i in range(len(prompts)):
         req = reqs[i]
-        req.input_ids += tokenizer.encode(prompts[i])[cut_num:]
+        req.input_ids += tokenizer.encode(prompts[i])[cut_num[i] :]
         req.prefix_indices = model.req_to_token_pool.req_to_token[
-            batch.req_pool_indices[i], :cut_num
+            batch.req_pool_indices[i], : cut_num[i]
         ]
 
     batch = Batch(reqs, model.req_to_token_pool, model.token_to_kv_pool, None)
