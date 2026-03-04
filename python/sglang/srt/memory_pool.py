@@ -51,7 +51,7 @@ class TokenToKVPool:
         self.mem_state = torch.zeros((size,), dtype=torch.int16, device="cuda")
         self.alloc_ct = 0
 
-        # [size, key/value, head_num, head_dim] for each layer
+        # [size, key/value, head_num, head_dim] for each layer (4D format for triton)
         self.kv_data = [
             torch.empty((size, 2, head_num, head_dim), dtype=dtype, device="cuda")
             for _ in range(layer_num)
@@ -62,6 +62,14 @@ class TokenToKVPool:
 
     def get_value_buffer(self, layer_id):
         return self.kv_data[layer_id][:, 1]
+
+    def get_kv_data_flashinfer(self, layer_id):
+        """Get kv_data in 5D format for flashinfer: [num_pages, 2, 1, num_kv_heads, head_dim] for NHD layout (page_size=1)"""
+        kv_data = self.kv_data[layer_id]
+        size, _, head_num, head_dim = kv_data.shape
+        # Reshape to [size, 2, 1, head_num, head_dim] for NHD layout
+        # Add page_size dimension (size=1) at position 2
+        return kv_data.view(size, 2, head_num, head_dim).unsqueeze(2)
 
     def alloc(self, need_size):
         available_indices = torch.nonzero(self.mem_state == 0)

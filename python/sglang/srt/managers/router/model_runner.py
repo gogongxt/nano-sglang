@@ -52,6 +52,8 @@ class InputMetadata:
     decode_wrapper = None
 
     def init_flashinfer_args(self, tp_size):
+        import flashinfer
+
         self.kv_indptr = torch.zeros(
             (self.batch_size + 1,), dtype=torch.int32, device="cuda"
         )
@@ -69,9 +71,14 @@ class InputMetadata:
             (self.batch_size,), dtype=torch.int32, device="cuda"
         )
 
-        from flashinfer.ops import (
-            BatchDecodeWithPagedKVCacheWrapper,
-            BatchPrefillWithPagedKVCacheWrapper,
+        num_qo_heads = self.model_runner.model_config.num_attention_heads // tp_size
+        num_kv_heads = self.model_runner.model_config.num_key_value_heads // tp_size
+        head_dim = self.model_runner.model_config.head_dim
+        page_size = 1
+
+        # Allocate workspace buffer for flashinfer
+        float_workspace_buffer = torch.empty(
+            128 * 1024 * 1024, dtype=torch.float16, device="cuda"
         )
 
         if self.forward_mode == ForwardMode.EXTEND:
@@ -79,25 +86,37 @@ class InputMetadata:
                 (self.batch_size + 1,), dtype=torch.int32, device="cuda"
             )
             self.qo_indptr[1:] = torch.cumsum(self.extend_seq_lens, dim=0)
-            self.prefill_wrapper = BatchPrefillWithPagedKVCacheWrapper()
+
+            # For extend mode, we need causal attention for the triangle part
+            # and also need to attend to prefix tokens
+            self.prefill_wrapper = flashinfer.BatchPrefillWithPagedKVCacheWrapper(
+                float_workspace_buffer
+            )
+
             self.prefill_wrapper.begin_forward(
                 self.qo_indptr,
-                self.batch_size,
-                self.model_runner.model_config.num_attention_heads // tp_size,
-                self.model_runner.model_config.num_key_value_heads // tp_size,
+                self.kv_indptr,
+                self.kv_indices,
+                self.kv_last_page_len,
+                num_qo_heads,
+                num_kv_heads,
+                head_dim,
+                page_size,
+                causal=True,  # Use causal=True for extend mode
             )
         else:
-            self.decode_wrapper = BatchDecodeWithPagedKVCacheWrapper()
+            # Use tensor cores for better GQA support
+            self.decode_wrapper = flashinfer.BatchDecodeWithPagedKVCacheWrapper(
+                float_workspace_buffer, use_tensor_cores=True
+            )
             self.decode_wrapper.begin_forward(
                 self.kv_indptr,
+                self.kv_indices,
                 self.kv_last_page_len,
-                self.batch_size,
-                self.model_runner.model_config.num_attention_heads // tp_size,
-                self.model_runner.model_config.num_key_value_heads // tp_size,
-                self.model_runner.model_config.head_dim,
-                1,
-                "NONE",
-                "float16",
+                num_qo_heads,
+                num_kv_heads,
+                head_dim,
+                page_size,
             )
 
     def init_extend_args(self):

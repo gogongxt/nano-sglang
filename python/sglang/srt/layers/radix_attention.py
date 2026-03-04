@@ -77,29 +77,34 @@ class RadixAttention(nn.Module):
         return o
 
     def extend_forward_flashinfer(self, q, k, v, input_metadata: InputMetadata):
+        import flashinfer
+
         self.store_kv_cache(k, v, input_metadata)
 
-        o = input_metadata.prefill_wrapper.forward(
-            q.contiguous().view(-1, self.tp_q_head_num, self.head_dim),
-            input_metadata.qo_indptr,
-            input_metadata.token_to_kv_pool.kv_data[self.layer_id],
-            input_metadata.kv_indptr,
-            input_metadata.kv_indices,
-            input_metadata.kv_last_page_len,
-            allow_fp16_qk_reduction=True,
-        )
+        # Reshape q to [batch_size * seq_len, num_heads, head_dim]
+        q_reshaped = q.contiguous().view(-1, self.tp_q_head_num, self.head_dim)
+
+        # Get kv_data in 5D format for flashinfer
+        kv_data = input_metadata.token_to_kv_pool.get_kv_data_flashinfer(self.layer_id)
+
+        o = input_metadata.prefill_wrapper.run(q_reshaped, kv_data)
 
         return o.view(-1, self.tp_q_head_num * self.head_dim)
 
     def decode_forward_flashinfer(self, q, k, v, input_metadata: InputMetadata):
+        import flashinfer
+
         self.store_kv_cache(k, v, input_metadata)
 
+        # Reshape q to [batch_size, num_heads, head_dim]
+        q_reshaped = q.contiguous().view(-1, self.tp_q_head_num, self.head_dim)
+
+        # Get kv_data in 5D format for flashinfer
+        kv_data = input_metadata.token_to_kv_pool.get_kv_data_flashinfer(self.layer_id)
+
         o = input_metadata.decode_wrapper.forward(
-            q.contiguous().view(-1, self.tp_q_head_num, self.head_dim),
-            input_metadata.token_to_kv_pool.kv_data[self.layer_id],
-            input_metadata.kv_indptr,
-            input_metadata.kv_indices,
-            input_metadata.kv_last_page_len,
+            q_reshaped,
+            kv_data,
         )
 
         return o.view(-1, self.tp_q_head_num * self.head_dim)
