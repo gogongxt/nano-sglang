@@ -46,8 +46,7 @@ cd nano-sglang/python
 pip install -e ".[all]"
 
 # Optional: Install flashinfer for acceleration
-git submodule update --init --recursive
-pip install 3rdparty/flashinfer/python
+pip install flashinfer-python==0.6.4 --no-build-isolation
 ```
 
 ### Basic Usage
