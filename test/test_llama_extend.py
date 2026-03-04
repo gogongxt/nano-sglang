@@ -10,7 +10,15 @@ from sglang.srt.utils import alloc_usable_network_port
 
 def test_generate_worker(model_path, tp_rank, tp_size, nccl_port):
     model_config = ModelConfig(path=model_path)
-    model = ModelRunner(model_config, 0.8, tp_rank, tp_size, nccl_port)
+    use_flashinfer = False
+    model = ModelRunner(
+        model_config,
+        0.8,
+        tp_rank,
+        tp_size,
+        nccl_port,
+        model_mode=["flashinfer"] if use_flashinfer else (),
+    )
     tokenizer = transformers.AutoTokenizer.from_pretrained(model_path)
 
     # Input
